@@ -1,0 +1,190 @@
+#!/bin/bash
+# ok2makefile.sh, 2013-12-19 T2045
+#
+# \@Descrtion:
+#   Generate a very simple project with makefile for c/c++, java, etc.
+#
+# \@Author: Wang Xiaoqiang - xiwang
+# \@Email: wxq521@gmail.com
+# 
+# OPTIONS
+#       -n name | --name name
+#           Name of demo, default "MyTEST"
+
+WORKDIR=$PWD
+
+# =============================================================================
+# arguments 
+# =============================================================================
+
+arg_appname=""
+arg_apptype=""
+export arg_appname arg_apptype
+
+# =============================================================================
+# functions 
+# =============================================================================
+
+# build c project
+# \@params[1] appname
+build_project_c() {
+  false
+}
+
+# -----------------------------------------------------------------------------
+
+# build c++ project
+# \@params[1] appname
+build_project_cpp() {
+appname=$1
+mkdir -p $appname
+
+cd $appname
+touch makefile
+touch main.cc
+
+# create makefile
+cat <<EOF >makefile
+# Makefile, 2012-06-23 T1110
+
+# TODO
+# ----------------------------------
+NAME        = $(echo $appname | tr '[:upper:]' '[:lower:]')
+VERSION     = 1.0.0
+RELEASE     = 01
+# ----------------------------------
+
+BIN         = \$(NAME)
+OBJS        = \$(patsubst %.cpp,%.cpp.o,\$(wildcard \$(SRC_DIR)/*.cpp))
+OBJS       += \$(patsubst %.cc,%.cc.o,\$(wildcard \$(SRC_DIR)/*.cc))
+OBJS       += \$(patsubst %.C,%.C.o,\$(wildcard \$(SRC_DIR)/*.C))
+
+# TODO
+# BEGIN ----------------------------------
+# Folders
+SRC_DIR     = .
+
+# Flags
+CXXFLAGS    = -Wall
+CXXFLAGS   += -I\$(SRC_DIR)
+
+CPPFLAGS    = -D_DEBUG
+
+LDFLAGS     = -L\$(SRC_DIR)
+
+LIBS        = -lpthread
+# END ----------------------------------
+
+.PHONY: all clean
+
+all: \$(BIN)
+
+\$(BIN): \$(OBJS)
+	\$(CXX) \$(CPPFLAGS) \$(LDFLAGS) \$^ -o \$@ \$(LIBS)
+
+# source files
+%.cpp.o: %.cpp
+	\$(CXX) \$(CXXFLAGS) \$(CPPFLAGS) -c \$^ -o \$@
+
+%.cc.o: %.cc
+	\$(CXX) \$(CXXFLAGS) \$(CPPFLAGS) -c \$^ -o \$@
+
+%.C.o: %.C
+	\$(CXX) \$(CXXFLAGS) \$(CPPFLAGS) -c \$^ -o \$@
+
+
+clean:
+	\$(RM) \$(BIN) \$(OBJS)
+
+EOF
+# END create makefile
+
+# create main.cc
+cat <<EOF >main.cc
+#include <iostream>
+
+int main(int argc, char **argv) {
+  std::cout << "Hello World!" << std::endl;
+  return 0;
+}
+
+EOF
+# END create main.cc
+  true
+}
+
+# -----------------------------------------------------------------------------
+
+# build java project
+# \@params[1] appname
+build_project_java() {
+  false
+}
+
+# -----------------------------------------------------------------------------
+
+# $1 => name  
+confirm_name() {
+  test ! -z "$1" || {
+    arg_appname="mytest"; export arg_appname
+  }
+
+  test ! -d "$1" || {
+    echo "option <-n name> is required incorrectly."
+    exit 1
+  }
+}
+
+confirm_type() {
+  re='n'
+  case "$1" in
+    c|cpp|java)
+      re='y'
+  esac
+  if [ $re == 'n' ]; then
+    echo "error, option [-t apptype] is required to be c/cpp/java."
+    exit 1
+  fi
+}
+
+# =============================================================================
+# main()
+# =============================================================================
+
+while [ $# -ne 0 ]; do
+  case "$1" in
+    -n|--name)
+      arg_appname="$2"; export arg_appname
+      shift; shift;
+    ;;
+    -t|--type)
+      arg_apptype="$2"; export arg_apptype
+      shift; shift;
+    ;;
+    -h|--help)
+      echo "ok2makefile -t apptype -n appname"
+      shift;
+      exit 0
+    ;;
+    *)
+      echo "error, see by <$0 -h>"
+      shift;
+      exit 0
+    ;;
+  esac
+done
+
+# validate to the arguments from command line
+confirm_name "${arg_appname}"
+confirm_type "${arg_apptype}"
+
+# call callback
+build_project_${arg_apptype} ${arg_appname}
+
+# report the result
+if [ $? == 0 ]; then
+  echo "${arg_appname} created."
+else
+  echo "project ${arg_appname} for ${arg_apptype} cannot be generated."
+fi
+exit 0
